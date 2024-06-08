@@ -1,0 +1,57 @@
+<div class="container-fluid outer-container">
+    <h2 class="header">Webcam Image Feed with Facial Recognition</h2>
+    <div class="header-space"></div>
+
+    <div class="row webcam-container">
+        <div class="col">
+            <h3 class="instructions">Click this button to start the webcam</h3>
+        </div>
+        <div class="col">
+            <button class="btn btn-primary webcam-btn" 
+            [ngStyle]="{'display': startWebcam ? 'none' : 'block'}"
+            (click)="startWebcamFeed()">Start webcam feed</button>
+        
+            <button class="btn btn-danger webcam-btn"
+            [ngStyle]="{'display': startWebcam ? 'block' : 'none'}"
+            (click)="stopVideo()">Stop webcam feed</button>
+        </div>        
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <h3 class="instructions">Click this button to upload an image</h3>
+        </div>
+        <div class="col">
+            <input class="img-btn" type="file" #imageUpload (click)="uploadImage()"
+            [ngStyle]="{'display': imgUploaded ? 'none' : 'block'}">
+
+            <button class="btn btn-danger webcam-btn"
+            [ngStyle]="{'display': imgUploaded ? 'block' : 'none'}"
+            (click)="deleteImage()">Delete image</button>
+        </div>
+    </div>
+    
+    <br />
+  
+    <div class="row">
+        <div class="video-container">
+            <video #video
+                [width]="WIDTH"
+                [height]="HEIGHT"
+                autoplay
+                muted
+                class="video-frame">
+            </video>
+        
+            <div #canvas class="canvas-container"></div>
+        </div>
+        <br />
+        <div class="image-container">
+            <!-- <input type="file" #imageUpload (click)="uploadImage()"> -->
+
+            <div #imgCanvas class="canvas-container"></div>
+        </div>
+    </div>
+</div>
+
+
