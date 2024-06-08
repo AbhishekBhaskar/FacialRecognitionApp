@@ -14,8 +14,8 @@ import * as faceapi from 'face-api.js';
 })
 export class VideoCaptureComponent implements OnInit {
 
-  WIDTH = 440;
-  HEIGHT = 280;
+  WIDTH = 540;
+  HEIGHT = 380;
 
   @ViewChild('video', {static: true})
   public video!: ElementRef;
@@ -46,6 +46,7 @@ export class VideoCaptureComponent implements OnInit {
     
   }
 
+  // function to start the webcam and capture images
   async startWebcamFeed() {
     await Promise.all([
       faceapi.nets.tinyFaceDetector.loadFromUri('./../../assets/models'),
@@ -62,7 +63,9 @@ export class VideoCaptureComponent implements OnInit {
 
     console.log(`screenWidth: ${this.screenWidth}`)
     console.log(`screenHeight: ${this.screenHeight}`)
-    if (this.screenWidth <= 400) {
+
+    // resetting video size for smaller screens
+    if (this.screenWidth <= 510) {
       this.WIDTH = 360;
       this.HEIGHT = 290;
     }
@@ -71,6 +74,8 @@ export class VideoCaptureComponent implements OnInit {
   startVideo() {
     this.startWebcam = true;
     this.videoInput = this.video.nativeElement;
+
+    // calling getUserMedia to read captured video frames
     navigator.mediaDevices.getUserMedia({
       video: {},
       audio: false
@@ -83,6 +88,7 @@ export class VideoCaptureComponent implements OnInit {
     this.detectFaces();
   }
 
+  // function to stop webcam
   stopVideo() {
     if (this.videoInput.srcObject) {
       const stream = this.videoInput.srcObject;
@@ -98,11 +104,14 @@ export class VideoCaptureComponent implements OnInit {
     this.startWebcam = false;
   }
 
+  // function to read video frames and perform face recognition
   detectFaces() {
     this.elRef.nativeElement.querySelector('video').addEventListener('play', async () => {
       this.canvas = await faceapi.createCanvasFromMedia(this.videoInput);
 
       this.canvasEl = this.canvasRef.nativeElement;
+
+      // replacing dom elements each time the user starts recording in the webcam
       if (this.canvasEl.hasChildNodes()) {
         this.canvasEl.replaceChild(this.canvas, this.canvasEl.childNodes[0]);
       } else {
@@ -113,15 +122,22 @@ export class VideoCaptureComponent implements OnInit {
           width: this.videoInput.width,
           height: this.videoInput.height,
       };
+
+      // prepare the overlay canvas
       faceapi.matchDimensions(this.canvas, this.displaySize);
 
       setInterval(async () => {
+        // detect face attributes in captured video frame
         this.detection = await faceapi.detectAllFaces(this.videoInput,  new  faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceExpressions().withAgeAndGender();
+        
+        // resize the detected boxes in case the displayed image has a different size than the original
         this.resizedDetections = faceapi.resizeResults(
            this.detection,
            this.displaySize
          );
         this.canvas.getContext('2d').clearRect(0, 0, this.canvas.width,this.canvas.height);
+
+        // draw canvas
         faceapi.draw.drawDetections(this.canvas, this.resizedDetections);
         faceapi.draw.drawFaceLandmarks(this.canvas, this.resizedDetections);
         faceapi.draw.drawFaceExpressions(this.canvas, this.resizedDetections);
@@ -136,6 +152,8 @@ export class VideoCaptureComponent implements OnInit {
     })
   }
 
+
+  // function to upload image selected by user
   uploadImage() {
     Promise.all([
       faceapi.nets.faceRecognitionNet.loadFromUri('./../../assets/models'),
@@ -145,11 +163,10 @@ export class VideoCaptureComponent implements OnInit {
     ]).then(() => this.startImageFaceRec());
   }
 
+  // function to start face recognition of uploaded image
   startImageFaceRec() {
     const container = document.createElement('div')
     container.style.position = 'relative'
-    // document.body.append(container)
-
     this.imgCanvasEl = this.imgCanvas.nativeElement;
       if (this.imgCanvasEl.hasChildNodes()) {
         this.imgCanvasEl.replaceChild(container, this.imgCanvasEl.childNodes[0]);
@@ -159,14 +176,13 @@ export class VideoCaptureComponent implements OnInit {
 
 
     const imageUpload = this.imageUpload.nativeElement;
-    // const labeledFaceDescriptors = await loadLabeledImages()
-    // const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6)
     let image: any = null;
     let imageCanvas: any = null;
     this.imgUploaded = true;
     imageUpload.addEventListener('change', async () => {
       if (image) image.remove();
       if (imageCanvas) imageCanvas.remove();
+      console.log(`imageUpload: ${imageUpload}`);
       image = await faceapi.bufferToImage(imageUpload.files[0]);
       container.append(image);
       imageCanvas = faceapi.createCanvasFromMedia(image);
@@ -178,22 +194,26 @@ export class VideoCaptureComponent implements OnInit {
       `);
       const displaySize = { width: image.width, height: image.height }
       faceapi.matchDimensions(imageCanvas, displaySize)
+
+      // detect face attributes in uploaded image
       const detections = await faceapi.detectAllFaces(image).withFaceLandmarks().withFaceDescriptors().withAgeAndGender()
       const resizedDetections = faceapi.resizeResults(detections, displaySize);
       resizedDetections.forEach((detection: any) => {
         const box = detection.detection.box
           const drawBox = new faceapi.draw.DrawBox(box, { 
-            label: Math.round(detection.age) + " year old " + detection.gender
+            label: Math.round(detection.age) + " year old " + detection.gender + "; width: " + image.width + "px" + " height: " + image.height + "px"
           })
           drawBox.draw(imageCanvas)
       })
     })
   }
 
+  // function to delete image
   deleteImage() {
     while (this.imgCanvasEl.hasChildNodes()) {
       this.imgCanvasEl.removeChild(this.imgCanvasEl.firstChild);
     }
+    this.imageUpload.nativeElement.value = '';
     this.imgUploaded = false;
   }
 
